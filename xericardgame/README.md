@@ -1,59 +1,289 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Xeri Card Game – Web API
+Project for ADISE 2025–2026  
+Author: Your Name  
+University of Piraeus
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+---
 
-## About Laravel
+## 1. Project Description
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This project implements the card game "Ξερή" as a Web API, following the requirements for a 1-person team.  
+The game is played entirely through API calls (curl, Postman, browser tools).  
+No GUI is required.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+The backend is built using:
+- PHP (Laravel)
+- PostgreSQL database
+- JSON communication
+- Custom token authentication
+- Stateless Web API architecture
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+All game state (deck, table, hands, captures, scores) is stored in the database.
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## 2. Game Rules Implemented
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Matching-value capture
+- Ξερή (one-card table capture)
+- Automatic dealing (6 cards per round)
+- Last captor handling (remaining table cards at end)
+- Full scoring system:
+  - Most cards: +3 points
+  - Most diamonds: +1 point
+  - Each Ξερή: +10 points
+- Turn tracking
+- Full deck playthrough
+- Game completes only when all cards are played and scored
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 3. Database Structure
 
-### Premium Partners
+### users
+- id
+- email
+- token
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### games
+- id
+- status (waiting, active, end, completed)
+- creator_id
+- deck (json)
+- table_cards (json)
+- current_player_id
+- last_captor_user_id
 
-## Contributing
+### game_players
+- id
+- game_id
+- user_id
+- player_number
+- xeri_count
+- score
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### hands
+- game_id
+- user_id
+- cards (json)
 
-## Code of Conduct
+### captures
+- game_id
+- user_id
+- cards (json)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## 4. Authentication
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Login
+```
+POST /api/login
+```
 
-## License
+Request:
+```json
+{
+  "email": "player@example.com"
+}
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Response:
+```json
+{
+  "token": "exampleToken123"
+}
+```
+
+Every request must include:
+```
+Authorization: Bearer <token>
+```
+
+---
+
+## 5. API Endpoints
+
+### 5.1 Create Game
+```
+POST /api/game/create
+Authorization: Bearer <token>
+```
+
+Response example:
+```json
+{
+  "game_id": 1,
+  "player_number": 1,
+  "your_hand": [...],
+  "table_cards": [...],
+  "message": "Game created. Waiting for opponent."
+}
+```
+
+A user may not create more than one active game.
+
+---
+
+### 5.2 Join Game
+```
+POST /api/game/join
+Authorization: Bearer <token>
+```
+
+Response:
+```json
+{
+  "game_id": 1,
+  "player_number": 2,
+  "your_hand": [...],
+  "table_cards": [...],
+  "message": "Joined game"
+}
+```
+
+Validation:
+- cannot join completed game  
+- cannot join if already in the game  
+- cannot join a full game (2 players)
+
+---
+
+### 5.3 Play a Card
+```
+POST /api/game/{id}/play
+Authorization: Bearer <token>
+
+{
+  "card": "10D"
+}
+```
+
+Examples:
+
+Capture:
+```json
+{
+  "message": "Capture",
+  "your_hand": [...],
+  "table_cards": []
+}
+```
+
+Ξερή:
+```json
+{
+  "message": "Ξερή!",
+  "table_cards": []
+}
+```
+
+Normal play:
+```json
+{
+  "message": "Card played"
+}
+```
+
+Validation:
+- must be the player's turn  
+- card must be in hand  
+- game must not be completed
+
+---
+
+### 5.4 Get Game State
+```
+GET /api/game/{id}/state
+Authorization: Bearer <token>
+```
+
+During game:
+```json
+{
+  "game_id": 1,
+  "player_number": 1,
+  "your_hand": [...],
+  "table_cards": [...],
+  "opponent_cards": 4,
+  "current_player_id": 2,
+  "game_status": "active"
+}
+```
+
+After game ends:
+```json
+{
+  "game_id": 1,
+  "results": [...],
+  "winner": {...},
+  "status": "completed"
+}
+```
+
+---
+
+### 5.5 Get Final Result
+```
+GET /api/game/{id}/result
+Authorization: Bearer <token>
+```
+
+Response:
+```json
+{
+  "game_id": 1,
+  "results": [
+    { "user_id": 3, "score": 12, "xeri_count": 1 },
+    { "user_id": 5, "score": 7, "xeri_count": 0 }
+  ],
+  "winner": {
+    "user_id": 3,
+    "score": 12
+  },
+  "status": "completed"
+}
+```
+
+---
+
+## 6. Installation
+
+```
+composer install
+cp .env.example .env
+php artisan key:generate
+
+# configure PostgreSQL in .env
+
+php artisan migrate
+php -S localhost:8000 -t PUBLIC
+```
+
+Server runs at:
+```
+http://localhost:8000
+```
+
+---
+
+## 7. Deployment Link
+(To be added if deployed online)
+
+---
+
+## 8. Submission Notes (as required by the assignment)
+
+- Projects must be declared by **26/11/2025**.  
+- Final delivery must be committed before **11/1/2026 23:59**.  
+- No changes allowed after this timestamp.  
+- README must contain:
+  - Short project description  
+  - Full API documentation  
+  - Deployment link (if applicable)  
+- Oral exam between **12/1/2026 – 16/1/2026**.
+
+---
+
+## End of README
+
