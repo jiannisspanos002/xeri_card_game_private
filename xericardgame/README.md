@@ -268,21 +268,8 @@ http://localhost:8000
 
 ---
 
-## 7. Deployment Link
-(To be added if deployed online)
-
----
-
-## 8. Submission Notes (as required by the assignment)
-
-- Projects must be declared by **26/11/2025**.  
-- Final delivery must be committed before **11/1/2026 23:59**.  
-- No changes allowed after this timestamp.  
-- README must contain:
-  - Short project description  
-  - Full API documentation  
-  - Deployment link (if applicable)  
-- Oral exam between **12/1/2026 – 16/1/2026**.
+## 7. App Link
+(To be added)
 
 ---
 
