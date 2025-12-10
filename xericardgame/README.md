@@ -1,7 +1,8 @@
 # Xeri Card Game – Web API
 Project for ADISE 2025–2026  
-Author: Your Name  
-University of Piraeus
+Author: Spanos Ioannis
+AM: 2021198
+International Hellenic University
 
 ---
 
