@@ -17,7 +17,18 @@ class GameController extends Controller
     {
         $user = $request->auth_user;
 
-        $deck = $this->createDeck();
+        $existingGame = Game::whereIn('status', ['waiting', 'active'])
+            ->whereHas('players', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->first();
+
+        if ($existingGame) {
+            return (new BaseResource(null))
+                ->withMessage('You already have an active game')
+                ->withStatusCode(409);
+        }
+        $deck = CardHelper::createDeck();
         shuffle($deck);
 
         $table_cards = array_slice($deck, 0, 4);
@@ -55,20 +66,7 @@ class GameController extends Controller
         ]))->withMessage("Game created")->withStatusCode(200);
     }
 
-    private function createDeck()
-    {
-        $suits = ['H', 'D', 'C', 'S'];
-        $values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
-        $deck = [];
-        foreach ($suits as $suit) {
-            foreach ($values as $value) {
-                $deck[] = $value . $suit;
-            }
-        }
-
-        return $deck;
-    }
 
     public function join(Request $request)
     {
@@ -182,6 +180,13 @@ class GameController extends Controller
             'card' => 'required|string'
         ]);
 
+
+        if ($game->status === 'completed') {
+            return (new BaseResource(null))
+                ->withMessage('Game is already completed')
+                ->withStatusCode(409);
+        }
+
         $card = $request->card;
 
         if (!$game) {
@@ -256,5 +261,34 @@ class GameController extends Controller
 
         return (new GameStateResource($stateData))
             ->withMessage($message);
+    }
+
+    public function result(Request $request, Game $game)
+    {
+        if ($game->status !== 'completed') {
+            return (new BaseResource(null))
+                ->withMessage('Game is not completed yet')
+                ->withStatusCode(409);
+        }
+
+        $players = GamePlayer::where('game_id', $game->id)->get();
+
+        $results = $players->map(function ($player) {
+            return [
+                'user_id' => $player->user_id,
+                'player_number' => $player->player_number,
+                'score' => $player->score,
+                'xeri_count' => $player->xeri_count
+            ];
+        });
+
+        $winner = $results->sortByDesc('score')->first();
+
+        return [
+            'game_id' => $game->id,
+            'results' => $results,
+            'winner' => $winner,
+            'status' => 'completed'
+        ];
     }
 }

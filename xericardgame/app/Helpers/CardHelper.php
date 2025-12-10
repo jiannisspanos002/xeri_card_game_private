@@ -124,4 +124,19 @@ class CardHelper
 
         $game->update(['deck' => $deck]);
     }
+
+    public static function createDeck()
+    {
+        $suits = ['H', 'D', 'C', 'S'];
+        $values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+        $deck = [];
+        foreach ($suits as $suit) {
+            foreach ($values as $value) {
+                $deck[] = $value . $suit;
+            }
+        }
+
+        return $deck;
+    }
 }

@@ -20,5 +20,9 @@ Route::middleware('api_token')->group(function () {
 
         //play
         Route::post('/{game}/play', [GameController::class, 'play']);
+
+        //result
+        Route::get('/game/{game}/result', [GameController::class, 'result']);
+
     });
 });
