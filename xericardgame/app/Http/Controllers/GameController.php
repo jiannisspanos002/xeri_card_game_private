@@ -6,7 +6,6 @@ use App\Helpers\CardHelper;
 use App\Http\Resources\BaseResource;
 use App\Http\Resources\GameBaseResource;
 use App\Http\Resources\GameStateResource;
-use App\Models\Capture;
 use Illuminate\Http\Request;
 use App\Models\Game;
 use App\Models\GamePlayer;
@@ -252,6 +251,8 @@ class GameController extends Controller
         $message = $capture
             ? ($xerii ? "Ξερή!" : "Capture!")
             : "Card played";
+
+        CardHelper::handleEmptyHands($game);
 
         return (new GameStateResource($stateData))
             ->withMessage($message);

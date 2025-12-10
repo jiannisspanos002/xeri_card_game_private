@@ -3,6 +3,10 @@
 namespace App\Helpers;
 
 use App\Models\Capture;
+use App\Models\Game;
+use App\Models\GamePlayer;
+use App\Models\Hand;
+use App\Helpers\EndGameHelper;
 
 class CardHelper
 {
@@ -67,10 +71,57 @@ class CardHelper
 
         $capture_model->update(['cards' => $new_captured]);
 
+        $game = Game::find($game_id);
+        $game->update(['last_captor_user_id' => $user_id]);
+
+
+        if ($xeri) {
+            $player = GamePlayer::where('game_id', $game_id)
+                ->where('user_id', $user_id)
+                ->first();
+
+            if ($player) {
+                $player->increment('xeri_count');
+            }
+        }
+
         return [
             'table' => [],
             'captures' => true,
             'xeri' => $xeri
         ];
+    }
+
+    public static function handleEmptyHands(Game $game): void
+    {
+        $game_id = $game->id;
+
+        $hands = Hand::where('game_id', $game_id)
+            ->whereIn('user_id', $game->players()->pluck('user_id'))
+            ->get();
+
+        $all_empty = $hands->every(fn($hand) => empty($hand->cards));
+
+        if (!$all_empty) {
+            return;
+        }
+
+        if (empty($game->deck)) {
+            EndGameHelper::finalizeGame($game);
+            return;
+        }
+
+        $deck = $game->deck;
+
+        foreach ($game->players as $p) {
+            $new_hand = array_slice($deck, 0, 6);
+            $deck = array_slice($deck, 6);
+
+            Hand::where('game_id', $game_id)
+                ->where('user_id', $p->user_id)
+                ->update(['cards' => $new_hand]);
+        }
+
+        $game->update(['deck' => $deck]);
     }
 }

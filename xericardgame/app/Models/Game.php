@@ -19,6 +19,7 @@ class Game extends Model
         'current_player_id',
         'deck',
         'table_cards',
+        'last_captor_user_id',
     ];
 
     protected $casts = [
