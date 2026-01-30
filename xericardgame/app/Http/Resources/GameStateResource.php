@@ -10,9 +10,9 @@ class GameStateResource extends GameBaseResource
     {
         $data = parent::toArray($request);
 
-        if ($this->status === 'completed') {
+        if ($this['status'] === 'completed') {
 
-            $players = GamePlayer::where('game_id', $this->game_id)->get();
+            $players = GamePlayer::where('game_id', $this['game_id'])->get();
 
             $results = [];
 
@@ -32,9 +32,10 @@ class GameStateResource extends GameBaseResource
 
             return $data;
         }
-        $data['opponent_cards'] = $this->opponent_cards;
-        $data['current_player_id'] = $this->current_player_id;
-        $data['game_status'] = $this->status;
+
+        $data['opponent_cards'] = $this['opponent_cards'];
+        $data['current_player_id'] = $this['current_player_id'];
+        $data['game_status'] = $this['status'];
 
         return $data;
     }

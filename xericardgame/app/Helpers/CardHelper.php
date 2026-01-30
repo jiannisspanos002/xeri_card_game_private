@@ -66,7 +66,7 @@ class CardHelper
             ['cards' => []]
         );
 
-        $current_captured = $captureModel->cards ?? [];
+        $current_captured = $capture_model->cards ?? [];
         $new_captured = array_merge($current_captured, $table_cards, [$played_card]);
 
         $capture_model->update(['cards' => $new_captured]);
